@@ -28,7 +28,7 @@ It is the version 2
     v.  grafana api key generate (Grafana icon --> Administration --> Users and access --> Service accounts --> Add Service Account --> Create service account --> Enter the Display name and Role : Editor or Admin --> Add 
          service account token --> Expiration : No expiration --> Generate token --> Copy the Token)
 
-    vi. Repo url (Code --> HTTPS --> copy the url)
+    vi. Git Repo url (Code --> HTTPS --> copy the url)
 
 
 # On the Server install Git 
