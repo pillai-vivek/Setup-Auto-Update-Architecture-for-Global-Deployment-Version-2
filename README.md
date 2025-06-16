@@ -33,6 +33,6 @@ It is the version 2
     sudo apt install git
 # And run this Comamnd 
 
-    git clone https://github.com/Tools-Automation-Vector-Team/Setup-Auto-Update-Architecture-for-Global-Deployment.git && cd Setup-Auto-Update-Architecture-for-Global-Deployment && chmod +x run.sh && ./run.sh
+    git clone https://github.com/pillai-vivek/Setup-Auto-Update-Architecture-for-Global-Deployment-Version-2.git && cd Setup-Auto-Update-Architecture-for-Global-Deployment-Version-2 && chmod +x run.sh && ./run.sh
 
 
