@@ -1,0 +1,11 @@
+# Core visualization plugins
+grafana-piechart-panel
+grafana-worldmap-panel
+grafana-clock-panel
+
+# Zabbix integration plugin
+alexanderzobnin-zabbix-app
+
+# Business-related plugins
+volkovlabs-variable-panel
+volkovlabs-table-panel
