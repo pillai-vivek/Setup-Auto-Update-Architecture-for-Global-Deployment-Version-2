@@ -148,13 +148,92 @@ def install_grafana_plugins(plugin_file):
     with open(plugin_file, "r") as f:
         plugins = [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
+    # Track whether any new plugin was installed
+    plugin_installed = False
+
     for plugin in plugins:
         logger.info(f"Installing Grafana plugin: {plugin}")
         exit_code = os.system(f"grafana-cli plugins install {plugin}")
         if exit_code == 0:
             logger.info(f"Successfully installed: {plugin}")
+            plugin_installed = True
         else:
-            logger.error(f"Failed to install: {plugin}")
+            logger.warning(f"Plugin might already be installed or failed: {plugin}")
+
+    # Restart Grafana only if something new was installed
+    if plugin_installed:
+        os.system("systemctl restart grafana-server")
+        logger.info("Grafana server restarted after plugin installation.")
+
+    # Enable Zabbix data source (if not already added)
+    try:
+        add_zabbix_datasource()
+    except Exception as e:
+        logger.error(f"Failed to add Zabbix data source: {e}")
+
+
+#---Adding Zabbix DataSource---
+def add_zabbix_datasource():
+    logger.info("[*] Ensuring Zabbix data source is configured in Grafana...")
+    headers = {
+        "Authorization": f"Bearer {CONFIG['grafana']['api_key']}",
+        "Content-Type": "application/json"
+    }
+
+    # Check if Zabbix data source already exists
+    res = requests.get(f"{CONFIG['grafana']['url']}/api/datasources", headers=headers)
+    if res.status_code != 200:
+        logger.warning("[Grafana] Failed to list data sources")
+        return
+
+    for ds in res.json():
+        if ds.get("type") == "alexanderzobnin-zabbix-datasource":
+            logger.info("[Grafana] Zabbix data source already exists.")
+            return
+
+    # If not found, add Zabbix data source
+    payload = {
+        "name": "Zabbix",
+        "type": "alexanderzobnin-zabbix-datasource",
+        "access": "proxy",
+        "url": CONFIG['zabbix']['url'].replace("/api_jsonrpc.php", ""),
+        "basicAuth": False,
+        "jsonData": {
+            "username": CONFIG['zabbix']['user'],
+            "password": CONFIG['zabbix']['password'],
+            "dbConnectionEnable": False,
+            "trends": True,
+            "trendsFrom": "7d",
+            "trendsRange": "4d"
+        },
+        "secureJsonData": {
+            "password": CONFIG['zabbix']['password']
+        }
+    }
+
+    res = requests.post(f"{CONFIG['grafana']['url']}/api/datasources", headers=headers, json=payload)
+    if res.status_code == 200:
+        logger.info("[Grafana] Zabbix data source successfully added.")
+    else:
+        logger.warning(f"[Grafana] Failed to add Zabbix data source: {res.text}")
+
+
+
+# def install_grafana_plugins(plugin_file):
+#     if not os.path.exists(plugin_file):
+#         logger.warning(f"Grafana plugin file not found: {plugin_file}")
+#         return
+
+#     with open(plugin_file, "r") as f:
+#         plugins = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+
+#     for plugin in plugins:
+#         logger.info(f"Installing Grafana plugin: {plugin}")
+#         exit_code = os.system(f"grafana-cli plugins install {plugin}")
+#         if exit_code == 0:
+#             logger.info(f"Successfully installed: {plugin}")
+#         else:
+#             logger.error(f"Failed to install: {plugin}")
 
 # --- Setup venv ---
 def setup_virtualenv():
@@ -170,54 +249,103 @@ def setup_virtualenv():
 
 # --- Main ---
 def main():
-    global logger
-    logger = setup_logging()
-    logger.info("Starting Zabbix auto-update process...")
-
     temp_dir = tempfile.mkdtemp()
-    logger.info("Cloning GitHub repos...")
+    logger.info("[*] Cloning GitHub repos...")
     zbx_tpl_dir = clone_or_pull(CONFIG['git_repos']['zabbix_templates'], os.path.join(temp_dir, 'zbx_tpl'))
     zbx_scr_dir = clone_or_pull(CONFIG['git_repos']['zabbix_scripts'], os.path.join(temp_dir, 'zbx_scr'))
     graf_dir = clone_or_pull(CONFIG['git_repos']['grafana_dashboards'], os.path.join(temp_dir, 'graf_dash'))
 
-    logger.info("Logging in to Zabbix...")
+    logger.info("[*] Zabbix login...")
     auth_token = zabbix_login()
 
     for cat in CATEGORIES:
-        logger.info(f"Processing category: {cat}")
+        logger.info(f"\n[→] Processing category: {cat}")
         subdir_tpl = os.path.join(zbx_tpl_dir, cat)
         subdir_scr = os.path.join(zbx_scr_dir, cat)
         subdir_graf = os.path.join(graf_dir, cat)
 
+        logger.info("[*] Importing Zabbix templates...")
         if os.path.exists(subdir_tpl):
             for f in os.listdir(subdir_tpl):
                 if f.lower().endswith(('.xml', '.json', '.yaml', '.yml')):
                     import_zabbix_template(auth_token, os.path.join(subdir_tpl, f))
 
+        logger.info("[*] Copying Zabbix scripts...")
         if os.path.exists(subdir_scr):
             for f in os.listdir(subdir_scr):
                 full_path = os.path.join(subdir_scr, f)
                 if os.path.isfile(full_path):
                     copy_external_script(full_path)
 
+        logger.info("[*] Uploading Grafana dashboards...")
         if os.path.exists(subdir_graf):
             for f in os.listdir(subdir_graf):
                 if f.endswith(".json"):
                     upload_grafana_dashboard(os.path.join(subdir_graf, f))
 
-    # Install Grafana plugins from plugin file
+    if CONFIG.get("venv_required", False):
+        logger.info("[*] Setting up virtualenv...")
+        setup_virtualenv()
+
+    # Install Grafana plugins if grafana_plugins.txt exists
     plugin_file_path = os.path.join(graf_dir, "grafana_plugins.txt")
     install_grafana_plugins(plugin_file_path)
 
-    # Optional: Restart Grafana
-    logger.info("Restarting Grafana server to apply plugin changes...")
-    os.system("systemctl restart grafana-server")
+    # Ensure Zabbix data source is added
+    add_zabbix_datasource()
 
-    if CONFIG.get("venv_required", False):
-        logger.info("Setting up virtual environment...")
-        setup_virtualenv()
+    logger.info("[✔] Auto-update finished successfully.")
 
-    logger.info("Auto-update finished successfully.")
+# def main():
+#     global logger
+#     logger = setup_logging()
+#     logger.info("Starting Zabbix auto-update process...")
+
+#     temp_dir = tempfile.mkdtemp()
+#     logger.info("Cloning GitHub repos...")
+#     zbx_tpl_dir = clone_or_pull(CONFIG['git_repos']['zabbix_templates'], os.path.join(temp_dir, 'zbx_tpl'))
+#     zbx_scr_dir = clone_or_pull(CONFIG['git_repos']['zabbix_scripts'], os.path.join(temp_dir, 'zbx_scr'))
+#     graf_dir = clone_or_pull(CONFIG['git_repos']['grafana_dashboards'], os.path.join(temp_dir, 'graf_dash'))
+
+#     logger.info("Logging in to Zabbix...")
+#     auth_token = zabbix_login()
+
+#     for cat in CATEGORIES:
+#         logger.info(f"Processing category: {cat}")
+#         subdir_tpl = os.path.join(zbx_tpl_dir, cat)
+#         subdir_scr = os.path.join(zbx_scr_dir, cat)
+#         subdir_graf = os.path.join(graf_dir, cat)
+
+#         if os.path.exists(subdir_tpl):
+#             for f in os.listdir(subdir_tpl):
+#                 if f.lower().endswith(('.xml', '.json', '.yaml', '.yml')):
+#                     import_zabbix_template(auth_token, os.path.join(subdir_tpl, f))
+
+#         if os.path.exists(subdir_scr):
+#             for f in os.listdir(subdir_scr):
+#                 full_path = os.path.join(subdir_scr, f)
+#                 if os.path.isfile(full_path):
+#                     copy_external_script(full_path)
+
+#         if os.path.exists(subdir_graf):
+#             for f in os.listdir(subdir_graf):
+#                 if f.endswith(".json"):
+#                     upload_grafana_dashboard(os.path.join(subdir_graf, f))
+
+#     # Install Grafana plugins from plugin file
+#     plugin_file_path = os.path.join(graf_dir, "grafana_plugins.txt")
+#     install_grafana_plugins(plugin_file_path)
+
+#     # Optional: Restart Grafana
+#     logger.info("Restarting Grafana server to apply plugin changes...")
+#     os.system("systemctl restart grafana-server")
+
+#     if CONFIG.get("venv_required", False):
+#         logger.info("Setting up virtual environment...")
+#         setup_virtualenv()
+
+#     logger.info("Auto-update finished successfully.")
+
 
 if __name__ == "__main__":
     main()
