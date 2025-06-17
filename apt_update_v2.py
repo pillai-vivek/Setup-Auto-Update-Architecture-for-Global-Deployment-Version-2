@@ -142,19 +142,19 @@ def clone_or_pull(repo_url, local_dir):
 #---Install Grafana Plugin---
 def install_grafana_plugins(plugin_file):
     if not os.path.exists(plugin_file):
-        log(f"[WARN] Grafana plugin file not found: {plugin_file}")
+        logger.warning(f"Grafana plugin file not found: {plugin_file}")
         return
 
-    with open(plugin_file, 'r') as f:
-        plugins = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+    with open(plugin_file, "r") as f:
+        plugins = [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
     for plugin in plugins:
-        log(f"[*] Installing Grafana plugin: {plugin}")
+        logger.info(f"Installing Grafana plugin: {plugin}")
         exit_code = os.system(f"grafana-cli plugins install {plugin}")
         if exit_code == 0:
-            log(f"[✓] Installed: {plugin}")
+            logger.info(f"Successfully installed: {plugin}")
         else:
-            log(f"[✗] Failed to install: {plugin}")
+            logger.error(f"Failed to install: {plugin}")
 
 # --- Setup venv ---
 def setup_virtualenv():
