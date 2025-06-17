@@ -12,10 +12,11 @@
   },
   "grafana": {
     "url": "http://34.130.10.46:3000",
-    "api_key": "glsa_4q3KPpWcCGdjAmpsCDFbQuFSJ25MZxNw_e746bfe1",
+    "api_key": "glsa_h4ljui5XqN5dw5FjLyr2IocLjS0Jaoyj_2302ab39",
     "folder": "Auto Updates"
   },
   "externalscript_path": "/usr/lib/zabbix/externalscripts",
+  "log_file": "/var/log/zabbix_auto_update.log",
   "venv_required": true,
   "template_rules": {
     "templates": true,
