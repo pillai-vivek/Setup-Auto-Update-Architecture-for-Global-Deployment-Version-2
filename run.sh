@@ -25,19 +25,19 @@ else
 fi
 
 # Set executable permissions for script and config
-if [[ -f "apt_update.py" ]]; then
-    chmod +x apt_update.py
-    echo "[✓] Made apt_update.py executable."
+if [[ -f "apt_update_v2.py" ]]; then
+    chmod +x apt_update_v2.py
+    echo "[✓] Made apt_update_v2.py executable."
 
-    echo "[*] Running apt_update.py..."
-    python3 apt_update.py
+    echo "[*] Running apt_update_v2.py..."
+    python3 apt_update_v2.py
 else
-    echo "[✗] apt_update.py not found!"
+    echo "[✗] apt_update_v2.py not found!"
 fi
 
-if [[ -f "auto_update_config.json" ]]; then
-    chmod +x auto_update_config.json
-    echo "[✓] Made auto_update_config.json executable."
+if [[ -f "auto_update_config_v2.json" ]]; then
+    chmod +x auto_update_config_v2.json
+    echo "[✓] Made auto_update_config_v2.json executable."
 fi
 
 echo "[✔] Python environment setup complete."
