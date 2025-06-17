@@ -139,6 +139,23 @@ def clone_or_pull(repo_url, local_dir):
         Repo.clone_from(repo_url, local_dir)
     return local_dir
 
+#---Install Grafana Plugin---
+def install_grafana_plugins(plugin_file):
+    if not os.path.exists(plugin_file):
+        log(f"[WARN] Grafana plugin file not found: {plugin_file}")
+        return
+
+    with open(plugin_file, 'r') as f:
+        plugins = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+
+    for plugin in plugins:
+        log(f"[*] Installing Grafana plugin: {plugin}")
+        exit_code = os.system(f"grafana-cli plugins install {plugin}")
+        if exit_code == 0:
+            log(f"[✓] Installed: {plugin}")
+        else:
+            log(f"[✗] Failed to install: {plugin}")
+
 # --- Setup venv ---
 def setup_virtualenv():
     import subprocess
@@ -187,6 +204,14 @@ def main():
             for f in os.listdir(subdir_graf):
                 if f.endswith(".json"):
                     upload_grafana_dashboard(os.path.join(subdir_graf, f))
+
+    # Install Grafana plugins from plugin file
+    plugin_file_path = os.path.join(graf_dir, "grafana_plugins.txt")
+    install_grafana_plugins(plugin_file_path)
+
+    # Optional: Restart Grafana
+    logger.info("Restarting Grafana server to apply plugin changes...")
+    os.system("systemctl restart grafana-server")
 
     if CONFIG.get("venv_required", False):
         logger.info("Setting up virtual environment...")
