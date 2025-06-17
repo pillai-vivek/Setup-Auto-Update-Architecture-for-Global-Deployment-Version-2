@@ -33,8 +33,10 @@ It is the version 2
 
 # On the Server install Git 
     sudo apt install git
-# And run this Comamnd 
+# And run this Comamnd for first time 
 
     git clone https://github.com/pillai-vivek/Setup-Auto-Update-Architecture-for-Global-Deployment-Version-2.git && cd Setup-Auto-Update-Architecture-for-Global-Deployment-Version-2 && chmod +x run.sh && ./run.sh
 
+# And run this Comamnd after first time
 
+cd /Setup-Auto-Update-Architecture-for-Global-Deployment-Version-2 && chmod +x run.sh && ./run.sh
