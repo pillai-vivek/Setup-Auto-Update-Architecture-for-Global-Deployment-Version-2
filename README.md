@@ -39,4 +39,4 @@ It is the version 2
 
 # And run this Comamnd after first time
 
-   cd "$(find / -type d -name 'Setup-Auto-Update-Architecture-for-Global-Deployment-Version-2' 2>/dev/null | head -n 1)" && chmod +x run.sh && ./run.sh
+    cd "$(find / -type d -name 'Setup-Auto-Update-Architecture-for-Global-Deployment-Version-2' 2>/dev/null | head -n 1)" && chmod +x run.sh && ./run.sh
