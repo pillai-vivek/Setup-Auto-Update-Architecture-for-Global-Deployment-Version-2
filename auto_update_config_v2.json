@@ -6,12 +6,12 @@
     "grafana_dashboards": "https://github.com/pillai-vivek/grafana-dashboards-New.git"
   },
   "zabbix": {
-    "url": "http://34.130.10.46/zabbix/api_jsonrpc.php",
+    "url": "http://10.50.80.78/zabbix/api_jsonrpc.php",
     "user": "Admin",
     "password": "zabbix"
   },
   "grafana": {
-    "url": "http://34.130.10.46:3000",
+    "url": "http://10.50.80.78:3000",
     "api_key": "glsa_h4ljui5XqN5dw5FjLyr2IocLjS0Jaoyj_2302ab39",
     "folder": "Auto Updates"
   },
